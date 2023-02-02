@@ -118,7 +118,6 @@ class PhysNet_padding_Encoder_Decoder_MAX(nn.Module):
         # x [64, T, 1,1]    -->  groundtruth left and right - 7
         x = self.poolspa(x)
         x = self.ConvBlock10(x)  # x [1, T, 1,1]
-
         rPPG = x.view(-1, length)
 
         return rPPG, x_visual, x_visual3232, x_visual1616

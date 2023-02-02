@@ -1,7 +1,7 @@
 """ The main function of rPPG deep learning pipeline."""
 
 import argparse
-import random
+import random 
 import time
 
 import numpy as np
@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
-torch.cuda.manual_seed(RANDOM_SEED)
+torch.cuda.manual_seed(RANDOM_SEED) 
 np.random.seed(RANDOM_SEED)
 random.seed(RANDOM_SEED)
 torch.backends.cudnn.deterministic = True
@@ -38,7 +38,7 @@ def seed_worker(worker_id):
 def add_args(parser):
     """Adds arguments for parser."""
     parser.add_argument('--config_file', required=False,
-                        default="configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml", type=str, help="The name of the model.")
+                        default="configs/PURE_PURE_UBFC_PHYSNET_BASIC.yaml", type=str, help="The name of the model.")
     '''Neural Method Sample YAMSL LIST:
       SCAMPS_SCAMPS_UBFC_TSCAN_BASIC.yaml
       SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml
@@ -89,6 +89,34 @@ def test(config, data_loader_dict):
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.test(data_loader_dict)
 
+def rPPG_removal(config, data_loader_dict):
+    """Tests the model."""
+    if config.MODEL.NAME == "Physnet":
+        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config)
+    elif config.MODEL.NAME == "Tscan":
+        model_trainer = trainer.TscanTrainer.TscanTrainer(config)
+    elif config.MODEL.NAME == "EfficientPhys":
+        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config)
+    elif config.MODEL.NAME == 'DeepPhys':
+        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config)
+    else:
+        raise ValueError('Your Model is Not Supported  Yet!')
+    model_trainer.signal_removal(data_loader_dict)
+
+def rPPG_removal(config, data_loader_dict):
+    """Tests the model."""
+    if config.MODEL.NAME == "Physnet":
+        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config)
+    elif config.MODEL.NAME == "Tscan":
+        model_trainer = trainer.TscanTrainer.TscanTrainer(config)
+    elif config.MODEL.NAME == "EfficientPhys":
+        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config)
+    elif config.MODEL.NAME == 'DeepPhys':
+        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config)
+    else:
+        raise ValueError('Your Model is Not Supported  Yet!')
+    model_trainer.signal_removal(data_loader_dict)
+
 
 def unsupervised_method_inference(config, data_loader):
     if not config.UNSUPERVISED.METHOD:
@@ -117,14 +145,13 @@ if __name__ == "__main__":
     parser = trainer.BaseTrainer.BaseTrainer.add_trainer_args(parser)
     parser = data_loader.BaseLoader.BaseLoader.add_data_loader_args(parser)
     args = parser.parse_args()
-
-    # configurations.
+ 
+    # configurations.   
     config = get_config(args)
-    print('Configuration:')
-    print(config, end='\n\n')
+    #print(config)
 
-    data_loader_dict = dict()
-    if config.TOOLBOX_MODE == "train_and_test" or config.TOOLBOX_MODE == "only_test":
+    data_loader_dict = dict() 
+    if config.TOOLBOX_MODE == "train_and_test" or config.TOOLBOX_MODE == "only_test" or config.TOOLBOX_MODE == "rPPG_removal":
         # neural method dataloader
         # train_loader
         if config.TRAIN.DATA.DATASET == "COHFACE":
@@ -252,7 +279,9 @@ if __name__ == "__main__":
         train_and_test(config, data_loader_dict)
     elif config.TOOLBOX_MODE == "only_test":
         test(config, data_loader_dict)
-    elif config.TOOLBOX_MODE == "unsupervised_method":
-        unsupervised_method_inference(config, data_loader_dict)
+    elif config.TOOLBOX_MODE == "rPPG_removal":
+        rPPG_removal(config, data_loader_dict)
+    elif config.TOOLBOX_MODE == "signal_method":
+        signal_method_inference(config, data_loader_dict)
     else:
-        print("TOOLBOX_MODE only support train_and_test or only_test !", end='\n\n')
+        print("TOOLBOX_MODE only support train_and_test, only_test and rPPG_removal !")

@@ -1,7 +1,7 @@
-"""DeepPhys - 2D Convolutional Attention Network.
-DeepPhys: Video-Based Physiological Measurement Using Convolutional Attention Networks
-ECCV, 2018
-Weixuan Chen, Daniel McDuff
+"""Hybrid Convolutional Attention Network (Hybrid-CAN).
+Multi-Task Temporal Shift Attention Networks for On-Device Contactless Vitals Measurement
+NeurIPS, 2020
+Xin Liu, Josh Fromm, Shwetak Patel, Daniel McDuff
 """
 
 import torch
@@ -24,18 +24,19 @@ class Attention_mask(nn.Module):
         return config
 
 
-class DeepPhys(nn.Module):
+class Hybrid_CAN(nn.Module):
 
     def __init__(self, in_channels=3, nb_filters1=32, nb_filters2=64, kernel_size=3, dropout_rate1=0.25,
-                 dropout_rate2=0.5, pool_size=(2, 2), nb_dense=128, img_size=36):
-        """Definition of DeepPhys.
+                 dropout_rate2=0.5, pool_size=(2, 2, 2), nb_dense=128, frame_depth=20, img_size=36):
+        """Definition of Hybrid_CAN.
         Args:
           in_channels: the number of input channel. Default: 3
+          frame_depth: the number of frame (window size) used in temport shift. Default: 20
           img_size: height/width of each frame. Default: 36.
         Returns:
-          DeepPhys model.
+          Hybrid_CAN model.
         """
-        super(DeepPhys, self).__init__()
+        super(Hybrid_CAN, self).__init__()
         self.in_channels = in_channels
         self.kernel_size = kernel_size
         self.dropout_rate1 = dropout_rate1
@@ -45,23 +46,23 @@ class DeepPhys(nn.Module):
         self.nb_filters2 = nb_filters2
         self.nb_dense = nb_dense
         # Motion branch convs
-        self.motion_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1),
+        self.motion_conv1 = nn.Conv3d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding='same',
                                       bias=True)
-        self.motion_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, bias=True)
-        self.motion_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1),
+        self.motion_conv2 = nn.Conv3d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, bias=True)
+        self.motion_conv3 = nn.Conv3d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding='same',
                                       bias=True)
-        self.motion_conv4 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, bias=True)
+        self.motion_conv4 = nn.Conv3d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, bias=True)
         # Apperance branch convs
         self.apperance_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size,
-                                         padding=(1, 1), bias=True)
+                                         padding='same', bias=True)
         self.apperance_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, bias=True)
         self.apperance_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size,
-                                         padding=(1, 1), bias=True)
+                                         padding='same', bias=True)
         self.apperance_conv4 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, bias=True)
         # Attention layers
-        self.apperance_att_conv1 = nn.Conv2d(self.nb_filters1, 1, kernel_size=1, padding=(0, 0), bias=True)
+        self.apperance_att_conv1 = nn.Conv2d(self.nb_filters1, 1, kernel_size=1, padding='same', bias=True)
         self.attn_mask_1 = Attention_mask()
-        self.apperance_att_conv2 = nn.Conv2d(self.nb_filters2, 1, kernel_size=1, padding=(0, 0), bias=True)
+        self.apperance_att_conv2 = nn.Conv2d(self.nb_filters2, 1, kernel_size=1, padding='same', bias=True)
         self.attn_mask_2 = Attention_mask()
         # Avg pooling
         self.avg_pooling_1 = nn.AvgPool2d(self.pool_size)
@@ -81,7 +82,7 @@ class DeepPhys(nn.Module):
             self.final_dense_1 = nn.Linear(30976, self.nb_dense, bias=True)
         else:
             raise Exception('Unsupported image size')
-        self.final_dense_2 = nn.Linear(self.nb_dense, 1, bias=True)
+        self.final_dense_2 = nn.Linear(self.nb_dense, frame_depth, bias=True)
 
     def forward(self, inputs, params=None):
 
@@ -122,4 +123,3 @@ class DeepPhys(nn.Module):
         out = self.final_dense_2(d11)
 
         return out
-

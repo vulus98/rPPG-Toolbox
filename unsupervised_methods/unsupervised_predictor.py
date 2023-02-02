@@ -95,4 +95,5 @@ def unsupervised_predict(config, data_loader, method_name):
                 Pearson_PEAK = np.corrcoef(predict_hr_fft_all, gt_hr_fft_all)
                 print("FFT Pearson  (FFT Label):{0}".format(Pearson_PEAK[0][1]))
             else:
-                raise ValueError("Wrong Test Metric Type")
+                pass
+                #raise ValueError("Wrong Test Metric Type")

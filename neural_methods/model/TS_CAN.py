@@ -156,7 +156,7 @@ class TSCAN(nn.Module):
         d11 = self.dropout_4(d10)
         out = self.final_dense_2(d11)
 
-        return out
+        return out,g2
 
 
 class MTTS_CAN(nn.Module):

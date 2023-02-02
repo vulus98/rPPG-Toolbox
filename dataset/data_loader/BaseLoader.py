@@ -68,10 +68,28 @@ class BaseLoader(Dataset):
                 self.build_file_list_retroactive(self.raw_data_dirs, config_data.BEGIN, config_data.END)
                 print('File list generated.', end='\n\n')
 
-            self.load_preprocessed_data()
-        print('Cached Data Path', self.cached_path, end='\n\n')
-        print('File List Path', self.file_list_path)
-        print(f" {self.dataset_name} Preprocessed Dataset Length: {self.preprocessed_data_len}", end='\n\n')
+    def get_data(self, data_path):
+        """Returns data directories under the path."""
+        return None
+
+    def get_data_subset(self, data_dirs, begin, end):
+        """Returns a subset of data dirs, split with begin and end values, 
+        and ensures no overlapping subjects between splits"""
+
+        return None
+
+    def preprocess_dataset(self, data_dirs, config_preprocess, begin, end):
+        """Parses and preprocesses all data.
+
+        Args:
+            config_preprocess(CfgNode): preprocessing settings(ref:config.py).
+        """
+        data_dirs = self.get_data_subset(data_dirs, begin, end)
+        print("Number of files to preprocess:", len(data_dirs))
+
+        file_list_dict,choose_range = self.multi_process_manager(data_dirs, config_preprocess)
+        self.build_file_list(file_list_dict, len(list(choose_range))) # build file list
+        self.load() # load all data and corresponding labels (sorted for consistency)
 
     def __len__(self):
         """Returns the length of the dataset."""
@@ -238,12 +256,13 @@ class BaseLoader(Dataset):
         if use_dynamic_detection:
             num_dynamic_det = ceil(frames.shape[0] / detection_freq)
         else:
-            num_dynamic_det = 1
-        face_region_all = []
-        # Perform face detection by num_dynamic_det" times.
-        for idx in range(num_dynamic_det):
-            if use_face_detection:
-                face_region_all.append(self.face_detection(frames[detection_freq * idx], use_larger_box, larger_box_coef))
+            det_num = 1
+        face_region = list()
+
+        # obtain detection region. it will do facial detection every "det_length" frames, totally "det_num" times.
+        for idx in range(det_num):
+            if crop_face:
+                face_region.append(self.facial_detection(frame=frames[det_length * idx], larger_box=larger_box, larger_box_size=larger_box_size))
             else:
                 face_region_all.append([0, 0, frames.shape[1], frames.shape[2]])
         face_region_all = np.asarray(face_region_all, dtype='int')
@@ -377,17 +396,15 @@ class BaseLoader(Dataset):
             pbar.update(1)
         pbar.close()
 
-        return file_list_dict
+        return file_list_dict,choose_range
 
     def build_file_list(self, file_list_dict):
         """Build a list of files used by the dataloader for the data split. Eg. list of files used for 
         train / val / test. Also saves the list to a .csv file.
 
-        Args:
-            file_list_dict(Dict): Dictionary containing information regarding processed data ( path names)
-        Returns:
-            None (this function does save a file-list .csv file to self.file_list_path)
-        """
+        # if len(file_list_dict.keys()) != num_files:
+        #     raise ValueError(self.name, 'All processed files not found')
+
         file_list = []
         # iterate through processes and add all processed file paths
         for process_num, file_paths in file_list_dict.items():
@@ -459,16 +476,14 @@ class BaseLoader(Dataset):
     def diff_normalize_data(data):
         """Calculate discrete difference in video data along the time-axis and nornamize by its standard deviation."""
         n, h, w, c = data.shape
-        diffnormalized_len = n - 1
-        diffnormalized_data = np.zeros((diffnormalized_len, h, w, c), dtype=np.float32)
-        diffnormalized_data_padding = np.zeros((1, h, w, c), dtype=np.float32)
-        for j in range(diffnormalized_len - 1):
-            diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
-                    data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
-        diffnormalized_data = diffnormalized_data / np.std(diffnormalized_data)
-        diffnormalized_data = np.append(diffnormalized_data, diffnormalized_data_padding, axis=0)
-        diffnormalized_data[np.isnan(diffnormalized_data)] = 0
-        return diffnormalized_data
+        normalized_len = n - 1
+        normalized_data = np.zeros((normalized_len, h, w, c), dtype=np.float32)
+        for j in range(normalized_len - 1):
+            normalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) #/ (
+                 #   data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
+        #normalized_data = normalized_data / np.std(normalized_data)
+        normalized_data[np.isnan(normalized_data)] = 0
+        return normalized_data
 
     @staticmethod
     def diff_normalize_label(label):
