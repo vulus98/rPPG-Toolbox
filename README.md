@@ -6,55 +6,43 @@ STEP2: `conda activate rppg-toolbox`
 
 STEP3: `pip install -r requirements.txt` 
 
-# Example of using pre-trained models 
-
-Please use config files under `./configs/infer_configs`
-
-For example, if you want to run The model trained on PURE and tested on UBFC, use `python main.py --config_file ./configs/infer_configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml`
-
-If you want to test unsupervised signal processing  methods, you can use `python main.py --config_file ./configs/infer_configs/UBFC_UNSUPERVISED.yaml`
-
-# Example of neural network training
-
-Please use config files under `./configs/train_configs`
-
-## Train on PURE and test on UBFC with TSCAN 
+# Training on PURE and testing on UBFC with TSCAN 
 
 STEP1: Download the PURE raw data by asking the [paper authors](https://www.tu-ilmenau.de/universitaet/fakultaeten/fakultaet-informatik-und-automatisierung/profil/institute-und-fachgebiete/institut-fuer-technische-informatik-und-ingenieurinformatik/fachgebiet-neuroinformatik-und-kognitive-robotik/data-sets-code/pulse-rate-detection-dataset-pure).
 
 STEP2: Download the UBFC raw data via [link](https://sites.google.com/view/ybenezeth/ubfcrppg)
 
-STEP3: Modify `./configs/train_configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml` 
+STEP3: Modify `./configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml` 
 
-STEP4: Run `python main.py --config_file ./configs/train_configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml` 
+STEP4: Run `python main.py --config_file ./configs/PURE_PURE_UBFC_TSCAN_BASIC.yaml` 
 
 Note1: Preprocessing requires only once; thus turn it off on the yaml file when you train the network after the first time. 
 
 Note2: The example yaml setting will allow 80% of PURE to train and 20% of PURE to valid. 
 After training, it will use the best model(with the least validation loss) to test on UBFC.
 
-## Training on SCAMPS and testing on UBFC with DeepPhys
+# Training on SCAMPS and testing on UBFC with DeepPhys
 
 STEP1: Download the SCAMPS via this [link](https://github.com/danmcduff/scampsdataset) and split it into train/val/test folders.
 
 STEP2: Download the UBFC via [link](https://sites.google.com/view/ybenezeth/ubfcrppg)
 
-STEP3: Modify `./configs/train_configs/SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml` 
+STEP3: Modify `./configs/SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml` 
 
-STEP4: Run `python main.py --config_file ./configs/train_configs/SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml`
+STEP4: Run `python main.py --config_file ./configs/SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml`
 
 Note1: Preprocessing requires only once; thus turn it off on the yaml file when you train the network after the first time. 
 
 Note2: The example yaml setting will allow 80% of SCAMPS to train and 20% of SCAMPS to valid. 
 After training, it will use the best model(with the least validation loss) to test on UBFC.
 
-# Predicting BVP signal and calculate heart rate on UBFC with POS/CHROME/ICA/GREEN/PBV/LGI
+# Predicting BVP signal and calculate heart rate on UBFC with POS/CHROME/ICA
 
 STEP1: Download the UBFC via [link](https://sites.google.com/view/ybenezeth/ubfcrppg)
 
-STEP3: Modify `./configs/infer_configs/UBFC_UNSUPERVISED.yaml` 
+STEP3: Modify `./configs/UBFC_SIGNAL.yaml` 
 
-STEP4: Run `python main.py --config_file ./configs/infer_configs/UBFC_UNSUPERVISED.yaml`
+STEP4: Run `python main.py --config_file ./configs/UBFC_SIGNAL.yaml`
 
 # Yaml File Setting
 The rPPG-Toolbox uses yaml file to control all parameters for training and evaluation. 
@@ -62,9 +50,13 @@ You can modify the existing yaml files to meet your own training and testing req
 
 Here are some explanation of parameters:
 * #### TOOLBOX_MODE: 
+
   * `train_and_test`: train on the dataset and use the newly trained model to test.
   * `only_test`: you need to set INFERENCE-MODEL_PATH, and it will use pre-trained model initialized with the MODEL_PATH to test.
-* #### TRAIN / VALID / TEST / UNSUPERVISED DATA: 
+  * `rPPG_removal`: exists only for PhysNet and PURE dataset, uses already pretrained PhysNet to run
+  rPPG signal modification.
+  * `signal method`: use signal methods to predict rppg BVP signal and calculate heart rate.
+* #### TRAIN / VALID / TEST / SIGNAL DATA: 
   * `DATA_PATH`: The input path of raw data
   * `CACHED_PATH`: The output path to preprocessed data. This path also houses a directory of .csv files containing data paths to files loaded by the dataloader. This filelist (found in default at CACHED_PATH/DataFileLists). These can be viewed for users to understand which files are used in each data split (train/val/test)
   * `EXP_DATA_NAME` If it is "", the toolbox generates a EXP_DATA_NAME based on other defined parameters. Otherwise, it uses the user-defined EXP_DATA_NAME.  
@@ -81,7 +73,7 @@ Here are some explanation of parameters:
 
   
 * #### MODEL : Set used model (support Deepphys / TSCAN / Physnet right now) and their parameters.
-* #### UNSUPERVISED METHOD: Set used unsupervised method. Example: ["ICA", "POS", "CHROM", "GREEN", "LGI", "PBV"]
+* #### SIGNAL METHOD: Set used signal method. Example: ["ica", "pos", "chrome"]
 * #### METRICS: Set used metrics. Example: ['MAE','RMSE','MAPE','Pearson']
 
 # Dataset
@@ -168,7 +160,17 @@ in: Proc. 23st IEEE Int. Symposium on Robot and Human Interactive Communication 
          |      |-- ii-jj/
          |      |-- ii-jj.json
     -----------------
-
+# rPPG signal removal mode
+  As stated before, this mode of operation works on PURE dataset and PhysNet extractor (for simple testing, just use `PURE_PURE_PURE_PHYSNET_BASIC.yaml`). You should first run the data preprocessing and training with this same yaml file (`train_and_test` mode with `DO_PREPROCESS` set to `True`) and then proceed to `rPPG_removal` mode. It should take a Testing part of PURE dataset (12 videos from last 2 persons) and modify them, substituting the original with the sinusuidal target signal. Then, it will run tests and evaluate videos in terms of MAE and PSNR. For customization of this sample test configuration, next chapter explains the meaning of the hyperparameters used in `rPPG_removal` mode. 
+## rPPG_removal Yaml Hyperparameters
+* TEST_DL_METHOD: After testing on PhysNet, test also on TS-CAN rPPG extractor. It assumes TS-CAN network is already pretrained and stored in folder `PreTrainedModels`.
+* TEST_MODEL_PATH: Path to the pretrained TS-CAN model
+* TARGET_SIGNAL_TYPE: Type of the target signal. Options: `RANDOM_FREQ_SINUSOID`, `LPF_GAUSS_NOISE` or `OTHER_PERSON_RPPG`
+* NUM_EPOCHS: Number of epochs for which we run GD on input in modification
+* LR: Learning rate during rPPG modification GD
+* VIDEOS_SAVED_PATH: Path to the folders where one wish to save the modified videos
+* TEST_CLASSICAL_METHODS: Boolean denoting whether classical extractors are used in testing
+* CLASSICAL_TESTING_METHODS: Choice of classical rPPG extractors that will be used for testing
 ## Add A New Dataloader
 
 * Step1 : Create a new python file in dataset/data_loader, e.g. MyLoader.py

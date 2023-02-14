@@ -1,0 +1,99 @@
+BASE: ['']
+TOOLBOX_MODE: "rPPG_removal"  # "train_and_test", "only_test" or "rPPG_removal"
+TRAIN:
+  BATCH_SIZE: 4
+  EPOCHS: 10
+  LR: 1e-3
+  MODEL_FILE_NAME: PURE_PURE_UBFC_physnet_normalized
+  DATA:
+    FS: 30
+    DATASET: PURE
+    DO_PREPROCESS: False            # if first time, should be true
+    DATA_FORMAT: NCDHW
+    DATA_PATH: "/local/home/vbozic/PURE_dataset/RawData"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/local/home/vbozic/PURE_dataset/PreprocessedData"    # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: ""
+    BEGIN: 0.0
+    END: 0.8
+    PREPROCESS :
+      DATA_TYPE: ['Standardized']         #if use physnet, should be Normalized
+      LABEL_TYPE: Normalized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 128                 #only support for factor of 512
+      DYNAMIC_DETECTION: True
+      DYNAMIC_DETECTION_FREQUENCY : 128
+      CROP_FACE: True
+      LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.2
+      H: 72
+      W: 72
+VALID:
+  DATA:
+    FS: 30
+    DATASET: PURE
+    DO_PREPROCESS: False                # if first time, should be true
+    DATA_FORMAT: NCDHW
+    DATA_PATH: "/local/home/vbozic/PURE_dataset/RawData"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/local/home/vbozic/PURE_dataset/PreprocessedData"    # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: ""
+    BEGIN: 0.8
+    END: 1.0
+    PREPROCESS :
+      DATA_TYPE: ['Standardized']         #if use physnet, should be Normalized
+      LABEL_TYPE: Normalized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 128                 #only support for factor of 512
+      DYNAMIC_DETECTION: True
+      DYNAMIC_DETECTION_FREQUENCY : 128
+      CROP_FACE: True
+      LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.2
+      H: 72
+      W: 72
+TEST:
+  METRICS: ['MAE','RMSE','MAPE','Pearson','SNR']
+  DATA:
+    FS: 30
+    DATASET: PURE
+    DO_PREPROCESS: False                  # if first time, should be true
+    DATA_FORMAT: NCDHW
+    DATA_PATH: "/local/home/vbozic/PURE_dataset/RawData"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/local/home/vbozic/PURE_dataset/PreprocessedData"    # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: ""
+    BEGIN: 0.8
+    END: 1.0
+    PREPROCESS :
+      DATA_TYPE: ['Standardized']         #if use physnet, should be Normalized
+      LABEL_TYPE: Normalized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 128                 #only support for factor of 512
+      DYNAMIC_DETECTION: True
+      DYNAMIC_DETECTION_FREQUENCY : 128
+      CROP_FACE: True
+      LARGE_FACE_BOX: True
+      LARGE_BOX_COEF: 1.2
+      H: 72
+      W: 72
+SIGNAL_REMOVAL:
+  TEST_DL_METHOD: True
+  TEST_MODEL_PATH: "./PreTrainedModels/PURE_SizeW72_SizeH72_ClipLength180_DataTypeStandardized_Normalized_LabelTypeNormalized_Large_boxTrue_Large_size1.2_Dyamic_DetTrue_det_len180/PURE_PURE_UBFC_tscan_Epoch13.pth"
+  TARGET_SIGNAL_TYPE: "OTHER_PERSON_RPPG" # "RANDOM_FREQ_SINUSOID", "LPF_GAUSS_NOISE" or "OTHER_PERSON_RPPG"
+  NUM_EPOCHS: 30
+  LR: 1000
+  VIDEOS_SAVED_PATH: "./saved_videos"
+  TEST_CLASSICAL_METHODS: False
+  CLASSICAL_TESTING_METHODS: ["ica", "green", "LGI", "PBV"] # "ica", "green", "LGI", "PBV" available
+
+DEVICE: cuda:0
+NUM_OF_GPU_TRAIN: 3
+LOG:
+  PATH: runs/exp
+MODEL:
+  DROP_RATE: 0.2
+  NAME: Physnet
+  PHYSNET:
+    FRAME_NUM: 128
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
+  MODEL_PATH: "./PreTrainedModels/PURE_SizeW72_SizeH72_ClipLength128_DataTypeStandardized_LabelTypeNormalized_Large_boxTrue_Large_size1.2_Dyamic_DetTrue_det_len128/PURE_PURE_UBFC_physnet_normalized_Epoch6.pth"

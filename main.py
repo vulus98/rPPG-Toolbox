@@ -2,14 +2,13 @@
 
 import argparse
 import random 
-import time
 
 import numpy as np
 import torch
 from config import get_config
 from dataset import data_loader
 from neural_methods import trainer
-from unsupervised_methods.unsupervised_predictor import unsupervised_predict
+from signal_methods.signal_predictor import signal_predict
 from torch.utils.data import DataLoader
 
 RANDOM_SEED = 100
@@ -19,14 +18,8 @@ np.random.seed(RANDOM_SEED)
 random.seed(RANDOM_SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-# Create a general generator for use with the validation dataloader,
-# the test dataloader, and the unsupervised dataloader
-general_generator = torch.Generator()
-general_generator.manual_seed(RANDOM_SEED)
-# Create a training generator to isolate the train dataloader from
-# other dataloaders and better control non-deterministic behavior
-train_generator = torch.Generator()
-train_generator.manual_seed(RANDOM_SEED)
+g = torch.Generator()
+g.manual_seed(RANDOM_SEED)
 
 
 def seed_worker(worker_id):
@@ -38,7 +31,7 @@ def seed_worker(worker_id):
 def add_args(parser):
     """Adds arguments for parser."""
     parser.add_argument('--config_file', required=False,
-                        default="configs/PURE_PURE_UBFC_PHYSNET_BASIC.yaml", type=str, help="The name of the model.")
+                        default="configs/PURE_PURE_PURE_PHYSNET_BASIC.yaml", type=str, help="The name of the model.")
     '''Neural Method Sample YAMSL LIST:
       SCAMPS_SCAMPS_UBFC_TSCAN_BASIC.yaml
       SCAMPS_SCAMPS_UBFC_DEEPPHYS_BASIC.yaml
@@ -52,9 +45,9 @@ def add_args(parser):
       UBFC_UBFC_PURE_TSCAN_BASIC.yaml
       UBFC_UBFC_PURE_DEEPPHYS_BASIC.yaml
       UBFC_UBFC_PURE_PHYSNET_BASIC.yaml
-    Unsupervised Method Sample YAMSL LIST:
-      PURE_UNSUPERVISED.yaml
-      UBFC_UNSUPERVISED.yaml
+    Signal Method Sample YAMSL LIST:
+      PURE_SIGNAL.yaml
+      UBFC_SIGNAL.yaml
     '''
     return parser
 
@@ -62,13 +55,13 @@ def add_args(parser):
 def train_and_test(config, data_loader_dict):
     """Trains the model."""
     if config.MODEL.NAME == "Physnet":
-        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config, data_loader_dict)
+        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config)
     elif config.MODEL.NAME == "Tscan":
-        model_trainer = trainer.TscanTrainer.TscanTrainer(config, data_loader_dict)
+        model_trainer = trainer.TscanTrainer.TscanTrainer(config)
     elif config.MODEL.NAME == "EfficientPhys":
-        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config, data_loader_dict)
+        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config)
     elif config.MODEL.NAME == 'DeepPhys':
-        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config, data_loader_dict)
+        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config)
     else:
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.train(data_loader_dict)
@@ -78,13 +71,13 @@ def train_and_test(config, data_loader_dict):
 def test(config, data_loader_dict):
     """Tests the model."""
     if config.MODEL.NAME == "Physnet":
-        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config, data_loader_dict)
+        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config)
     elif config.MODEL.NAME == "Tscan":
-        model_trainer = trainer.TscanTrainer.TscanTrainer(config, data_loader_dict)
+        model_trainer = trainer.TscanTrainer.TscanTrainer(config)
     elif config.MODEL.NAME == "EfficientPhys":
-        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config, data_loader_dict)
+        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config)
     elif config.MODEL.NAME == 'DeepPhys':
-        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config, data_loader_dict)
+        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config)
     else:
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.test(data_loader_dict)
@@ -103,39 +96,25 @@ def rPPG_removal(config, data_loader_dict):
         raise ValueError('Your Model is Not Supported  Yet!')
     model_trainer.signal_removal(data_loader_dict)
 
-def rPPG_removal(config, data_loader_dict):
-    """Tests the model."""
-    if config.MODEL.NAME == "Physnet":
-        model_trainer = trainer.PhysnetTrainer.PhysnetTrainer(config)
-    elif config.MODEL.NAME == "Tscan":
-        model_trainer = trainer.TscanTrainer.TscanTrainer(config)
-    elif config.MODEL.NAME == "EfficientPhys":
-        model_trainer = trainer.EfficientPhysTrainer.EfficientPhysTrainer(config)
-    elif config.MODEL.NAME == 'DeepPhys':
-        model_trainer = trainer.DeepPhysTrainer.DeepPhysTrainer(config)
-    else:
-        raise ValueError('Your Model is Not Supported  Yet!')
-    model_trainer.signal_removal(data_loader_dict)
 
-
-def unsupervised_method_inference(config, data_loader):
-    if not config.UNSUPERVISED.METHOD:
-        raise ValueError("Please set unsupervised method in yaml!")
-    for unsupervised_method in config.UNSUPERVISED.METHOD:
-        if unsupervised_method == "POS":
-            unsupervised_predict(config, data_loader, "POS")
-        elif unsupervised_method == "CHROM":
-            unsupervised_predict(config, data_loader, "CHROM")
-        elif unsupervised_method == "ICA":
-            unsupervised_predict(config, data_loader, "ICA")
-        elif unsupervised_method == "GREEN":
-            unsupervised_predict(config, data_loader, "GREEN")
-        elif unsupervised_method == "LGI":
-            unsupervised_predict(config, data_loader, "LGI")
-        elif unsupervised_method == "PBV":
-            unsupervised_predict(config, data_loader, "PBV")
+def signal_method_inference(config, data_loader):
+    if not config.SIGNAL.METHOD:
+        raise ValueError("Please set signal method in yaml!")
+    for signal_method in config.SIGNAL.METHOD:
+        if signal_method == "pos":
+            signal_predict(config, data_loader, "pos")
+        elif signal_method == "chrome":
+            signal_predict(config, data_loader, "chrome")
+        elif signal_method == "ica":
+            signal_predict(config, data_loader, "ica")
+        elif signal_method == "green":
+            signal_predict(config, data_loader, "green")
+        elif signal_method == "LGI":
+            signal_predict(config, data_loader, "LGI")
+        elif signal_method == "PBV":
+            signal_predict(config, data_loader, "PBV")
         else:
-            raise ValueError("Not supported unsupervised method!")
+            raise ValueError("Not supported signal method!")
 
 
 if __name__ == "__main__":
@@ -176,13 +155,8 @@ if __name__ == "__main__":
             valid_loader = data_loader.PURELoader.PURELoader
         elif config.VALID.DATA.DATASET == "SCAMPS":
             valid_loader = data_loader.SCAMPSLoader.SCAMPSLoader
-        elif config.VALID.DATA.DATASET is None and not config.TEST.USE_LAST_EPOCH:
-                raise ValueError("Validation dataset not specified despite USE_LAST_EPOCH set to False!")
         else:
             raise ValueError("Unsupported dataset! Currently supporting UBFC, PURE, and SCAMPS.")
-
-        if config.TEST.USE_LAST_EPOCH:
-                print("Testing uses last epoch, validation dataset is not required.", end='\n\n')
 
         # test_loader
         if config.TEST.DATA.DATASET == "COHFACE":
@@ -197,7 +171,7 @@ if __name__ == "__main__":
         else:
             raise ValueError("Unsupported dataset! Currently supporting UBFC, PURE, and SCAMPS.")
 
-        if config.TRAIN.DATA.DATASET is not None and config.TRAIN.DATA.DATA_PATH:
+        if config.TRAIN.DATA.DATA_PATH:
             train_data_loader = train_loader(
                 name="train",
                 data_path=config.TRAIN.DATA.DATA_PATH,
@@ -208,12 +182,12 @@ if __name__ == "__main__":
                 batch_size=config.TRAIN.BATCH_SIZE,
                 shuffle=True,
                 worker_init_fn=seed_worker,
-                generator=train_generator
+                generator=g
             )
         else:
             data_loader_dict['train'] = None
 
-        if config.VALID.DATA.DATASET is not None and config.VALID.DATA.DATA_PATH and not config.TEST.USE_LAST_EPOCH:
+        if config.VALID.DATA.DATA_PATH:
             valid_data = valid_loader(
                 name="valid",
                 data_path=config.VALID.DATA.DATA_PATH,
@@ -224,12 +198,12 @@ if __name__ == "__main__":
                 batch_size=config.TRAIN.BATCH_SIZE,  # batch size for val is the same as train
                 shuffle=False,
                 worker_init_fn=seed_worker,
-                generator=general_generator
+                generator=g
             )
         else:
             data_loader_dict['valid'] = None
 
-        if config.TEST.DATA.DATASET is not None and config.TEST.DATA.DATA_PATH:
+        if config.TEST.DATA.DATA_PATH:
             test_data = test_loader(
                 name="test",
                 data_path=config.TEST.DATA.DATA_PATH,
@@ -240,40 +214,40 @@ if __name__ == "__main__":
                 batch_size=config.INFERENCE.BATCH_SIZE,
                 shuffle=False,
                 worker_init_fn=seed_worker,
-                generator=general_generator
+                generator=g
             )
         else:
             data_loader_dict['test'] = None
 
-    elif config.TOOLBOX_MODE == "unsupervised_method":
-        # unsupervised method dataloader
-        if config.UNSUPERVISED.DATA.DATASET == "COHFACE":
-            # unsupervised_loader = data_loader.COHFACELoader.COHFACELoader
+    elif config.TOOLBOX_MODE == "signal_method":
+        # signal method dataloader
+        if config.SIGNAL.DATA.DATASET == "COHFACE":
+            # signal_loader = data_loader.COHFACELoader.COHFACELoader
             raise ValueError("Unsupported dataset! Currently supporting UBFC, PURE, and SCAMPS.")
-        elif config.UNSUPERVISED.DATA.DATASET == "UBFC":
-            unsupervised_loader = data_loader.UBFCLoader.UBFCLoader
-        elif config.UNSUPERVISED.DATA.DATASET == "PURE":
-            unsupervised_loader = data_loader.PURELoader.PURELoader
-        elif config.UNSUPERVISED.DATA.DATASET == "SCAMPS":
-            unsupervised_loader = data_loader.SCAMPSLoader.SCAMPSLoader
+        elif config.SIGNAL.DATA.DATASET == "UBFC":
+            signal_loader = data_loader.UBFCLoader.UBFCLoader
+        elif config.SIGNAL.DATA.DATASET == "PURE":
+            signal_loader = data_loader.PURELoader.PURELoader
+        elif config.SIGNAL.DATA.DATASET == "SCAMPS":
+            signal_loader = data_loader.SCAMPSLoader.SCAMPSLoader
         else:
             raise ValueError("Unsupported dataset! Currently supporting UBFC, PURE, and SCAMPS.")
 
-        unsupervised_data = unsupervised_loader(
-            name="unsupervised",
-            data_path=config.UNSUPERVISED.DATA.DATA_PATH,
-            config_data=config.UNSUPERVISED.DATA)
-        data_loader_dict["unsupervised"] = DataLoader(
-            dataset=unsupervised_data,
+        signal_data = signal_loader(
+            name="signal",
+            data_path=config.SIGNAL.DATA.DATA_PATH,
+            config_data=config.SIGNAL.DATA)
+        data_loader_dict["signal"] = DataLoader(
+            dataset=signal_data,
             num_workers=16,
             batch_size=1,
             shuffle=False,
             worker_init_fn=seed_worker,
-            generator=general_generator
+            generator=g
         )
 
     else:
-        raise ValueError("Unsupported toolbox_mode! Currently support train_and_test or only_test or unsupervised_method.")
+        raise ValueError("Unsupported toolbox_mode! Currently support train_and_test or only_test or signal_method.")
 
     if config.TOOLBOX_MODE == "train_and_test":
         train_and_test(config, data_loader_dict)

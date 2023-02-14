@@ -16,6 +16,7 @@ import cv2
 import numpy as np
 from dataset.data_loader.BaseLoader import BaseLoader
 from tqdm import tqdm
+from utils.utils import sample
 
 
 class PURELoader(BaseLoader):
@@ -44,12 +45,12 @@ class PURELoader(BaseLoader):
         """
         super().__init__(name, data_path, config_data)
 
-    def get_raw_data(self, data_path):
+    def get_data(self, data_path):
         """Returns data directories under the path(For PURE dataset)."""
 
         data_dirs = glob.glob(data_path + os.sep + "*-*")
         if not data_dirs:
-            raise ValueError(self.dataset_name + " data paths empty!")
+            raise ValueError(self.name + " dataset get data error!")
         dirs = list()
         for data_dir in data_dirs:
             subject_trail_val = os.path.split(data_dir)[-1].replace('-', '')
@@ -58,7 +59,7 @@ class PURELoader(BaseLoader):
             dirs.append({"index": index, "path": data_dir, "subject": subject})
         return dirs
 
-    def split_raw_data(self, data_dirs, begin, end):
+    def get_data_subset(self, data_dirs, begin, end):
         """Returns a subset of data dirs, split with begin and end values, 
         and ensures no overlapping subjects between splits"""
 
@@ -69,9 +70,11 @@ class PURELoader(BaseLoader):
         # get info about the dataset: subject list and num vids per subject
         data_info = dict()
         for data in data_dirs:
+
             subject = data['subject']
             data_dir = data['path']
             index = data['index']
+
             # creates a dictionary of data_dirs indexed by subject number
             if subject not in data_info:  # if subject not in the data info dictionary
                 data_info[subject] = []  # make an emplty list for that subject
@@ -86,6 +89,7 @@ class PURELoader(BaseLoader):
         subj_range = list(range(0, num_subjs))
         if begin != 0 or end != 1:
             subj_range = list(range(int(begin * num_subjs), int(end * num_subjs)))
+        print('used subject ids for split:', [subj_list[i] for i in subj_range])
 
         # compile file list
         data_dirs_new = []
@@ -98,7 +102,7 @@ class PURELoader(BaseLoader):
         return data_dirs_new
 
     def preprocess_dataset_subprocess(self, data_dirs, config_preprocess, i, file_list_dict):
-        """ Invoked by preprocess_dataset for multi_process. """
+        """   invoked by preprocess_dataset for multi_process.   """
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
         
@@ -106,15 +110,15 @@ class PURELoader(BaseLoader):
             os.path.join(data_dirs[i]['path'], filename, ""))
         bvps = self.read_wave(
             os.path.join(data_dirs[i]['path'], "{0}.json".format(filename)))
-        target_length = frames.shape[0]
-        bvps = BaseLoader.resample_ppg(bvps, target_length)
-        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
-        input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
+
+        bvps = sample(bvps, frames.shape[0])
+        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, config_preprocess.LARGE_FACE_BOX)
+        count, input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
     @staticmethod
     def read_video(video_file):
-        """Reads a video file, returns frames(T, H, W, 3) """
+        """Reads a video file, returns frames(T,H,W,3) """
         frames = list()
         all_png = sorted(glob.glob(video_file + '*.png'))
         for png_path in all_png:
