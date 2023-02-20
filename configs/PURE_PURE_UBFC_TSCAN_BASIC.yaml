@@ -1,5 +1,5 @@
 BASE: ['']
-TOOLBOX_MODE: "rPPG_removal"      # "train_and_test", "only_test" or "rPPG_removal"
+TOOLBOX_MODE: "train_and_test"      # "train_and_test", "only_test" or "rPPG_removal"
 TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 15
@@ -51,7 +51,7 @@ VALID:
       H: 72
       W: 72
 TEST:
-  METRICS: ['MAE','RMSE','MAPE','Pearson','SNR']
+  METRICS: ['MAE','RMSE','MAPE','Pearson']
   DATA:
     FS: 30
     DATASET: PURE
@@ -75,7 +75,7 @@ TEST:
       H: 72
       W: 72 
 DEVICE: cuda:0
-NUM_OF_GPU_TRAIN: 3
+NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
 MODEL:

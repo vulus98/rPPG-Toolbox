@@ -230,7 +230,7 @@ class PhysnetTrainer(BaseTrainer):
             max_pixel_val=255
             print("PhysNet Test:")
             calculate_metrics_SR(predictions_train, target_array, self.config,True,modified_video_diff,max_pixel_val)
-            if(self.test_DL):
+            if(self.test_DL): 
                 print("TS-CAN Test:")
                 diffs=torch.tensor(BaseLoader.diff_normalize_data(video_array[:,:,:,:,i].cpu().numpy()),device=self.config.DEVICE)
                 diffs=torch.cat((diffs,torch.zeros_like(diffs[0,:,:,:],device=self.device).unsqueeze(0)),dim=0)
@@ -268,7 +268,7 @@ class PhysnetTrainer(BaseTrainer):
                     label=label[:self.num_chunks*self.chunk_len]
                     video=video[:self.num_chunks*self.chunk_len]
                     if(self.target_signal=="RANDOM_FREQ_SINUSOID"):
-                        rand_freq=random.randint(60,120)
+                        rand_freq=random.randint(65,115)
                         target_label=sine_wave(rand_freq,self.num_chunks*self.chunk_len+1)
                         target_label=BaseLoader.diff_normalize_label(target_label)
                     elif(self.target_signal=="LPF_GAUSS_NOISE"):

@@ -77,11 +77,11 @@ TEST:
 SIGNAL_REMOVAL:
   TEST_DL_METHOD: True
   TEST_MODEL_PATH: "./PreTrainedModels/PURE_SizeW72_SizeH72_ClipLength180_DataTypeStandardized_Normalized_LabelTypeNormalized_Large_boxTrue_Large_size1.2_Dyamic_DetTrue_det_len180/PURE_PURE_UBFC_tscan_Epoch13.pth"
-  TARGET_SIGNAL_TYPE: "OTHER_PERSON_RPPG" # "RANDOM_FREQ_SINUSOID", "LPF_GAUSS_NOISE" or "OTHER_PERSON_RPPG"
+  TARGET_SIGNAL_TYPE: "RANDOM_FREQ_SINUSOID" # "RANDOM_FREQ_SINUSOID", "LPF_GAUSS_NOISE" or "OTHER_PERSON_RPPG"
   NUM_EPOCHS: 30
   LR: 1000
   VIDEOS_SAVED_PATH: "./saved_videos"
-  TEST_CLASSICAL_METHODS: False
+  TEST_CLASSICAL_METHODS: True
   CLASSICAL_TESTING_METHODS: ["ica", "green", "LGI", "PBV"] # "ica", "green", "LGI", "PBV" available
 
 DEVICE: cuda:0

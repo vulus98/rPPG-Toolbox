@@ -66,9 +66,9 @@ def calculate_metrics_SR(predictions, labels,config,signal_removal=False,video_m
             predictions[:,i], labels[:,i], diff_flag=diff_flag_test, fs=config.TEST.DATA.FS)
         # gt_hr_peak, pred_hr_peak = calculate_metric_peak_per_video(
         #     prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS)
-        if(pred_hr_fft>=60 and pred_hr_fft<=120):
-            gt_hr_fft_all.append(gt_hr_fft)
-            predict_hr_fft_all.append(pred_hr_fft)
+        # if(pred_hr_fft>=60 and pred_hr_fft<=120):
+        gt_hr_fft_all.append(gt_hr_fft)
+        predict_hr_fft_all.append(pred_hr_fft)
         snr=np.mean(20. * np.log10(max_pixel_val/video_mse[:,i]))
         snr_all.append(snr)
         # predict_hr_peak_all.append(pred_hr_peak)
