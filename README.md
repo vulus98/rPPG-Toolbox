@@ -1,3 +1,8 @@
+# About
+Remote photoplethysmography (rPPG) is a contactless method for the remote measurement of the blood volume pulse from the video of a person's face. Since these physiological signals represent private information, advancements in this field raise concerns about compromising this data and privacy issues to which this may lead. Thus, ways of concealing or removing the rPPG signal were much needed.
+ 
+ To counter the methods for extraction of this signal, a video editing method was introduced in [Privacy-Phys paper](https://ieeexplore.ieee.org/document/9806161), efficiently modifying face areas of a video from where the rPPG signal is estimated and replacing the original signal with a dummy one, concealing it. This basic pipeline has been modified, its performance in different settings and overall limitations have been inspected. Experimental results show the versatility of the given technique, achieving state-of-art quality of rPPG removal while extending its possible applications in different scenarios. On top of that, the dataset for further improvements and training of novel end-to-end architectures for rPPG signal removal has been created.
+
 # Setup
 
 STEP1: `bash setup.sh` 
